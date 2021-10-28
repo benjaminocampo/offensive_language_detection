@@ -1,0 +1,17 @@
+name: offenseval
+channels:
+  - conda-forge
+dependencies:
+  - numpy
+  - pandas
+  - matplotlib
+  - seaborn=0.11
+  - scikit-learn
+  - nltk
+  - spacy
+  - pyarrow
+  - gensim
+  - adjusttext
+  - pip:
+    - mlflow
+    - fasttext
