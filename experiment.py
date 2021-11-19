@@ -1,21 +1,17 @@
 # %%
-from sklearn import preprocessing
 from sklearn.cluster import KMeans
-from sklearn.manifold import TSNE
-from sklearn.metrics._plot.confusion_matrix import ConfusionMatrixDisplay
 from yellowbrick.cluster import SilhouetteVisualizer, KElbowVisualizer
 from adjustText import adjust_text
-from sklearn.metrics.pairwise import euclidean_distances
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import LabelEncoder
 import fasttext
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
 import seaborn as sns
 # %%
 train_df = pd.read_csv(f"../OLIDv1.0/offenseval_train.csv").drop_duplicates(subset="tweet")
@@ -104,8 +100,6 @@ model = fasttext.train_unsupervised(corpus_file,
                                     wordNgrams=4,
                                     ws=4)
 # %%
-model.get_nearest_neighbors("shits")
-# %%
 train_df["vec"] = train_df["tweet"].apply(lambda t: model.get_sentence_vector(t))
 test_df["vec"] = train_df["tweet"].apply(lambda t: model.get_sentence_vector(t))
 X_train, y_train = np.vstack(train_df["vec"]), train_df["labels"]
@@ -127,8 +121,6 @@ plt.xlabel("Predicted label")
 plt.ylabel("True label")
 plt.show()
 plt.clf()
-# %%
-from sklearn.metrics import classification_report
 
 print(classification_report(y_test, y_pred))
 # %%
@@ -136,20 +128,65 @@ sns.histplot(train_df["tweet"].apply(lambda t: len(t)))
 # %%
 sns.countplot(data=train_df, x="subtask_a")
 # %%
-bow_vectorizer = CountVectorizer()
-bow_vectorizer = bow_vectorizer.fit(train_df["tweet"])
-X_train_bow = bow_vectorizer.transform(train_df["tweet"]) 
-X_test_bow = bow_vectorizer.transform(test_df["tweet"])
+train_off_df = train_df[train_df["subtask_a"] == "OFF"]
+train_not_df = train_df[train_df["subtask_a"] == "NOT"]
 # %%
-cluster_df = embedding[embedding["cluster"] == 1]
-points = cluster_df.drop(columns=["sentence", "cluster"]).to_numpy()
-distances = euclidean_distances(points, kmeans.cluster_centers_[0].reshape(1, -1))
-cluster_df = cluster_df.assign(center_distance=distances)
-cluster_df = cluster_df.sort_values(by="center_distance")
+sentences = train_off_df["tweet"]
+corpus_file = "tweets.txt"
+model = fasttext.train_unsupervised(corpus_file,
+                                    model="cbow",
+                                    lr=0.3,
+                                    epoch=100,
+                                    dim=100,
+                                    wordNgrams=4,
+                                    ws=4)
 # %%
-cluster_df["center_distance"].head(10)
+train_off_df = train_off_df.assign(vec_off=train_off_df["tweet"].apply(
+    lambda t: model.get_sentence_vector(t)))
+train_not_df = train_not_df.assign(vec_off=train_not_df["tweet"].apply(
+    lambda t: model.get_sentence_vector(t)))
+train_new_df = pd.concat([train_off_df, train_not_df])
+X_train_new, y_train_new = np.vstack(
+    train_new_df["vec_off"]), train_new_df["labels"]
+
+test_off_df = test_df[test_df["subtask_a"] == "OFF"]
+test_not_df = test_df[test_df["subtask_a"] == "NOT"]
+
+test_off_df = test_off_df.assign(
+    vec_off=test_off_df["tweet"].apply(lambda t: model.get_sentence_vector(t)))
+test_not_df = test_not_df.assign(
+    vec_off=test_not_df["tweet"].apply(lambda t: model.get_sentence_vector(t)))
+test_new_df = pd.concat([test_off_df, test_not_df])
+X_test_new, y_test_new = np.vstack(test_new_df["vec_off"]), test_new_df["labels"]
+
+clf = SVC(class_weight="balanced")
+clf.fit(X_train_new, y_train_new)
+
+y_pred = clf.predict(X_test_new)
+print(classification_report(y_test_new, y_pred))
 # %%
-for t in cluster_df["sentence"].head(10):
-    print(t)
-    print()
+cm = confusion_matrix(y_test_new, y_pred)
+sns.heatmap(cm, annot=True, fmt="d")
+plt.xlabel("y_pred")
+plt.ylabel("y_true")
+plt.show()
+plt.clf()
+# %%
+test_off_df = test_off_df.assign(
+    new_label=kmeans_off.predict(np.vstack(test_off_df["vec_off"])))
+# %%
+test_off_df
+# %%
+X_test_off, y_test_off = np.vstack(test_off_df["vec_off"]), test_off_df["new_label"]
+# %%
+y_pred_off = clf.predict(X_test_off)
+# %%
+print(classification_report(y_test_off, y_pred_off))
+# %%
+test_off_df[test_off_df["new_label"] == 0]
+# %%
+test_off_df[test_off_df["new_label"] == 1]
+# %%
+train_not_df = train_not_df.assign(
+    new_label=10)
 # %%
