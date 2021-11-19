@@ -31,20 +31,9 @@ from sklearn.tree import DecisionTreeClassifier
 train_df = pd.read_csv(f"dataset/processed/offenseval_train.csv")
 test_df = pd.read_csv(f"dataset/processed/offenseval_test.csv")
 # %%
-train_df = train_df.drop_duplicates(subset="tweet")
 train_df
 # %%
-train_df = (
-    train_df
-    .drop(columns=["subtask_b", "subtask_c"])
-    .rename(columns={"subtask_a": "label"})
-)
-
-test_df = (
-    test_df
-    .drop(columns=["subtask_b", "subtask_c"])
-    .rename(columns={"subtask_a": "label"})
-)
+test_df
 # %% [markdown]
 # ## Codificación de tweets
 # TODO:
@@ -131,11 +120,6 @@ def plot_elbow(X, estimator, metric, k_range, ax, title_size=10, tick_size=10):
     visualizer.fit(X)
     ax.set_title("Elbow Plot", fontsize=title_size)
     ax.tick_params(axis='both', which='major', labelsize=tick_size)
-# %%
-le = LabelEncoder()
-le.fit(train_df["subtask_a"])
-train_df = train_df.assign(labels=le.transform(train_df["subtask_a"]))
-test_df = test_df.assign(labels=le.transform(test_df["subtask_a"]))
 # %%
 sentences = train_df["tweet"].sample(5000)
 corpus_file = "tweets.txt"
