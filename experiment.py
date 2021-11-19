@@ -1,21 +1,71 @@
+# %% [markdown]
+# # Integración de clustering para mejorar la clasificación de lenguaje ofensivo
+# %% [markdown]
+# ## Descripción de la tarea
+# TODO: Mencionar los experimentos y armar indices.
 # %%
-from sklearn.cluster import KMeans
-from yellowbrick.cluster import SilhouetteVisualizer, KElbowVisualizer
-from adjustText import adjust_text
-from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import SVC
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import LabelEncoder
-import fasttext
+# Numpy and Pandas
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
+
+# Fasttext
+import fasttext
+
+# Plotting
+import matplotlib.pyplot as plt
 import seaborn as sns
+from adjustText import adjust_text
+from yellowbrick.cluster import SilhouetteVisualizer, KElbowVisualizer
+
+# Sklearn
+from sklearn.cluster import KMeans
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.preprocessing import LabelEncoder
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+# %% [markdown]
+# ## Exploración de datos
 # %%
-train_df = pd.read_csv(f"../OLIDv1.0/offenseval_train.csv").drop_duplicates(subset="tweet")
-test_df = pd.read_csv(f"../OLIDv1.0/offenseval_test.csv")
+train_df = pd.read_csv(f"dataset/processed/offenseval_train.csv")
+test_df = pd.read_csv(f"dataset/processed/offenseval_test.csv")
+# %%
+train_df = train_df.drop_duplicates(subset="tweet")
+train_df
+# %%
+train_df = (
+    train_df
+    .drop(columns=["subtask_b", "subtask_c"])
+    .rename(columns={"subtask_a": "label"})
+)
+
+test_df = (
+    test_df
+    .drop(columns=["subtask_b", "subtask_c"])
+    .rename(columns={"subtask_a": "label"})
+)
+# %% [markdown]
+# ## Codificación de tweets
+# TODO:
+# - Modelos de lenguaje con todos los datos, y con solo los ofensivos
+# %% [markdown]
+# ## Clustering
+# TODO:
+# - Kmeans con ofensivos y no ofensivos
+# - Gráficos de silhouette
+# - Métricas de pureza
+# - Que hay en los clusters
+# %% [markdown]
+# ## Clasificación
+# TODO:
+# - Fasttext con todos los datos + LGR o XGBoost o NN
+# - Fasttext con datos offensivos + LGR o XGBoost o NN
+# - Lo mismo pero con undersampling
+# %% [markdown]
+# ## Clasificación con etiquetas dada por clustering
+# TODO:
+# - Solo training set con datos ofensivos
 # %%
 def unsupervised_data_gen(sentences, corpus_file):
     with open(corpus_file, "w") as out:
