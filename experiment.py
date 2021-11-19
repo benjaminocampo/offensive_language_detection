@@ -34,10 +34,44 @@ test_df = pd.read_csv(f"dataset/processed/offenseval_test.csv")
 train_df
 # %%
 test_df
+# %%
 # %% [markdown]
 # ## Codificación de tweets
-# TODO:
-# - Modelos de lenguaje con todos los datos, y con solo los ofensivos
+# %%
+def unsupervised_data_gen(sentences, corpus_file):
+    with open(corpus_file, "w") as out:
+        for s in sentences:
+            out.write(s + "\n")
+
+off_sentences = train_df.loc[train_df["label_name"] == "OFF", "tweet"]
+mixed_sentences = train_df["tweet"].sample(5000)
+
+unsupervised_data_gen(off_sentences, "offensive_sentences.txt")
+unsupervised_data_gen(mixed_sentences, "mixed_sentences.txt")
+
+model_off = fasttext.train_unsupervised("offensive_sentences.txt",
+                                        model="cbow",
+                                        lr=0.3,
+                                        epoch=100,
+                                        dim=100,
+                                        wordNgrams=4,
+                                        ws=4)
+model_mixed = fasttext.train_unsupervised("mixed_sentences.txt",
+                                          model="cbow",
+                                          lr=0.3,
+                                          epoch=100,
+                                          dim=100,
+                                          wordNgrams=4,
+                                          ws=4)
+
+train_df = train_df.assign(
+    vec_off=train_df["tweet"].apply(lambda t: model_off.get_sentence_vector(t)),
+    vec_mixed=train_df["tweet"].apply(lambda t: model_mixed.get_sentence_vector(t))
+)
+test_df = test_df.assign(
+    vec_off=test_df["tweet"].apply(lambda t: model_off.get_sentence_vector(t)),
+    vec_mixed=test_df["tweet"].apply(lambda t: model_mixed.get_sentence_vector(t))
+)
 # %% [markdown]
 # ## Clustering
 # TODO:
@@ -56,10 +90,6 @@ test_df
 # TODO:
 # - Solo training set con datos ofensivos
 # %%
-def unsupervised_data_gen(sentences, corpus_file):
-    with open(corpus_file, "w") as out:
-        for s in sentences:
-            out.write(s + "\n")
 
 
 def plot_2DTSNE(X_TSNE,
@@ -120,11 +150,6 @@ def plot_elbow(X, estimator, metric, k_range, ax, title_size=10, tick_size=10):
     visualizer.fit(X)
     ax.set_title("Elbow Plot", fontsize=title_size)
     ax.tick_params(axis='both', which='major', labelsize=tick_size)
-# %%
-sentences = train_df["tweet"].sample(5000)
-corpus_file = "tweets.txt"
-# %%
-unsupervised_data_gen(sentences, corpus_file)
 # %%
 model = fasttext.train_unsupervised(corpus_file,
                                     model="cbow",
