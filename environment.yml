@@ -12,6 +12,9 @@ dependencies:
   - pyarrow
   - gensim
   - adjusttext
+  - tqdm
   - pip:
     - mlflow
     - fasttext
+    - xgboost
+    - torch
